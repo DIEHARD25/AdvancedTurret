@@ -98,5 +98,4 @@ void AAT_Turret::RotateToTarget(FVector TargetLocation)
 
 	RightBarrel->SetRelativeRotation(FRotator( DesiredRotation.Pitch, 0.0, 0.0));
 	LeftBarrel->SetRelativeRotation(FRotator( DesiredRotation.Pitch, 0.0, 0.0));
-
 }
