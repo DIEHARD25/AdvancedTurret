@@ -45,7 +45,7 @@ public:
 	UFUNCTION()
 		void OnEndOverlap(AActor* TurretActor, AActor* OtherActor);
 
-	void RotateToTarget(FVector TargetLocation, float DeltaTime);
+	void TrackTarget(FVector TargetLocation, float DeltaTime);
 	void ResetRotation(float DeltaTime);
 	FRotator ApplyRestrict(FRotator DesiredRotation);
 	// rotation restrict

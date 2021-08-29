@@ -52,7 +52,7 @@ void AAT_Turret::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	if (CurrentTarget)
-		RotateToTarget(CurrentTarget->GetActorLocation(), DeltaTime);
+		TrackTarget(CurrentTarget->GetActorLocation(), DeltaTime);
 	else
 		ResetRotation(DeltaTime);
 }
@@ -113,7 +113,7 @@ FRotator AAT_Turret::ApplyRestrict(FRotator DesiredRotation)
 	return DesiredRotation;
 }
 
-void AAT_Turret::RotateToTarget(FVector TargetLocation, float DeltaTime)
+void AAT_Turret::TrackTarget(FVector TargetLocation, float DeltaTime)
 {
 	// pure magic...
 	// calcualting the diff
@@ -123,22 +123,23 @@ void AAT_Turret::RotateToTarget(FVector TargetLocation, float DeltaTime)
 	// now making rotation from location
 	FRotator DesiredRotation = UKismetMathLibrary::MakeRotFromX(DesiredLocation);
 	// and finally apply the rotator to tower
+	// apply restrict
 	DesiredRotation = ApplyRestrict(DesiredRotation);
-
+	// calculate the RInterp values for Yaw 
 	float DesiredYaw = UKismetMathLibrary::RInterpTo_Constant(
 		TurretHorizontTower->GetRelativeRotation(), 
 		FRotator(0.0, DesiredRotation.Yaw, 0.0), 
 		DeltaTime, 
 		YawSpeed).Yaw;
-
+	// apply Yaw
 	TurretHorizontTower->SetRelativeRotation(FRotator( 0.0, DesiredYaw, 0.0));
-	
+	// calculate the RInterp values for Pitch 
 	float DesiredPitch = UKismetMathLibrary::RInterpTo_Constant(
-		RightBarrel->GetRelativeRotation(),
+		RightBarrel->GetRelativeRotation(), 
 		FRotator(DesiredRotation.Pitch, 0.0, 0.0),
 		DeltaTime,
 		PitchSpeed).Pitch;
-	
+	// apply Pitch
 	RightBarrel->SetRelativeRotation(FRotator( DesiredPitch, 0.0, 0.0));
 	LeftBarrel->SetRelativeRotation(FRotator( DesiredPitch, 0.0, 0.0));
 }
