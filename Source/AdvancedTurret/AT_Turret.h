@@ -45,12 +45,15 @@ public:
 	UFUNCTION()
 		void OnEndOverlap(AActor* TurretActor, AActor* OtherActor);
 
-	void RotateToTarget(FVector TargetLocation);
-	void ResetRotation();
+	void RotateToTarget(FVector TargetLocation, float DeltaTime);
+	void ResetRotation(float DeltaTime);
+	FRotator ApplyRestrict(FRotator DesiredRotation);
 	// rotation restrict
 	float PitchRestrict;
 	float YawRestrict;
 
+	float PitchSpeed;
+	float YawSpeed;
 
 protected:
 	// Called when the game starts or when spawned
