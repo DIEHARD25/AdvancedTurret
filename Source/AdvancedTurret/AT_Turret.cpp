@@ -31,6 +31,8 @@ AAT_Turret::AAT_Turret()
 	LeftBarrel->AttachToComponent(TurretHorizontTower, FAttachmentTransformRules::KeepRelativeTransform);
 
 	CurrentTarget = nullptr;
+	PitchRestrict = 60.0f;
+	YawRestrict = 360.0f;
 }
 
 // Called when the game starts or when spawned
@@ -61,19 +63,14 @@ void AAT_Turret::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 void AAT_Turret::OnBeginOverlap(AActor* TurretActor, AActor* OtherActor)
 {
 	// first item - detection
+	// TODO: multiple targets register
 	if (OtherActor->ActorHasTag("Target"))
-	{
-		// let's try to cast
 		CurrentTarget = Cast<AAT_TargetPractice>(OtherActor);
-		if (CurrentTarget)
-		{
-			RotateToTarget(CurrentTarget->GetActorLocation());
-		}
-	}
+	
 }
 
 void AAT_Turret::OnEndOverlap(AActor* TurretActor, AActor* OtherActor)
-{
+{	
 	CurrentTarget = nullptr;
 }
 
@@ -94,7 +91,16 @@ void AAT_Turret::RotateToTarget(FVector TargetLocation)
 	// now making rotation from location
 	FRotator DesiredRotation = UKismetMathLibrary::MakeRotFromX(DesiredLocation);
 	// and finally apply the rotator to tower
+	if (DesiredRotation.Yaw >= YawRestrict)
+		DesiredRotation.Yaw = YawRestrict;
+	else if(DesiredRotation.Yaw <= -YawRestrict)
+		DesiredRotation.Yaw = -YawRestrict;
 	TurretHorizontTower->SetRelativeRotation(FRotator( 0.0, DesiredRotation.Yaw, 0.0));
+
+	if (DesiredRotation.Pitch >= PitchRestrict)
+		DesiredRotation.Pitch = PitchRestrict;
+	else if (DesiredRotation.Pitch <= -PitchRestrict)
+		DesiredRotation.Pitch = -PitchRestrict;
 
 	RightBarrel->SetRelativeRotation(FRotator( DesiredRotation.Pitch, 0.0, 0.0));
 	LeftBarrel->SetRelativeRotation(FRotator( DesiredRotation.Pitch, 0.0, 0.0));

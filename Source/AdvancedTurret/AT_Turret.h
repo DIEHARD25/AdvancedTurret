@@ -47,6 +47,10 @@ public:
 
 	void RotateToTarget(FVector TargetLocation);
 	void ResetRotation();
+	// rotation restrict
+	float PitchRestrict;
+	float YawRestrict;
+
 
 protected:
 	// Called when the game starts or when spawned

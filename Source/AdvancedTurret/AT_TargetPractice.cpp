@@ -21,7 +21,7 @@ void AAT_TargetPractice::BeginPlay()
 
 	CurrentPosition = GetActorLocation();
 	CurrentRotation = GetActorRotation();
-	CurrentVelocity = FVector(FMath::RandRange(-150.0f, 150.0f), FMath::RandRange(-150.0f, 150.0f), 0.0f);
+	CurrentVelocity = FVector(FMath::RandRange(-350.0f, -150.0f), 0.0f, 0.0f);
 	// pff.. simple
 	CurrentDirection = CurrentPosition + CurrentVelocity;
 }
