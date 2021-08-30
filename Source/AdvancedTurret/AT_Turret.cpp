@@ -34,8 +34,9 @@ AAT_Turret::AAT_Turret()
 	PitchRestrict = 60.0f;
 	YawRestrict = 360.0f;
 
-	PitchSpeed = 15.0f;
-	YawSpeed = 15.0f;
+	PitchSpeed = 50.0f;
+	YawSpeed = 50.0f;
+	PotentialTargets.Empty();
 }
 
 // Called when the game starts or when spawned
@@ -51,10 +52,10 @@ void AAT_Turret::BeginPlay()
 void AAT_Turret::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (CurrentTarget)
-		TrackTarget(CurrentTarget->GetActorLocation(), DeltaTime);
+	if(CurrentTarget)
+		TrackTarget(CurrentTarget->GetActorLocation());
 	else
-		ResetRotation(DeltaTime);
+		ResetRotation();
 }
 
 // Called to bind functionality to input
@@ -65,24 +66,35 @@ void AAT_Turret::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 
 void AAT_Turret::OnBeginOverlap(AActor* TurretActor, AActor* OtherActor)
 {
-	// first item - detection
-	// TODO: multiple targets register
-	if (OtherActor->ActorHasTag("Target"))
-		CurrentTarget = Cast<AAT_TargetPractice>(OtherActor);
-	
+	UE_LOG(LogTemp, Warning, TEXT("OverlapBegin"));
+	// first check if this is ok target and add it to array
+	AAT_TargetPractice * Target = Cast<AAT_TargetPractice>(OtherActor);
+	if (Target)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OverlapBegin - adding"));
+		PotentialTargets.Add(Target);
+		UpdateCurrentTarget();
+	}
 }
 
 void AAT_Turret::OnEndOverlap(AActor* TurretActor, AActor* OtherActor)
-{	
-	CurrentTarget = nullptr;
+{
+	UE_LOG(LogTemp, Warning, TEXT("OverlapEnd"));
+	AAT_TargetPractice * Target = Cast<AAT_TargetPractice>(OtherActor);
+	if (Target)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OverlapEnd - removing"));
+		PotentialTargets.Remove(Target);
+		UpdateCurrentTarget();
+	}
 }
 
-void AAT_Turret::ResetRotation(float DeltaTime)
+void AAT_Turret::ResetRotation()
 {
 	float DesiredYaw = UKismetMathLibrary::RInterpTo_Constant(
 		TurretHorizontTower->GetRelativeRotation(),
 		FRotator(0.0, 0.0, 0.0),
-		DeltaTime,
+		GetWorld()->GetDeltaSeconds(),
 		YawSpeed).Yaw;
 
 	TurretHorizontTower->SetRelativeRotation(FRotator(0, DesiredYaw, 0));
@@ -90,7 +102,7 @@ void AAT_Turret::ResetRotation(float DeltaTime)
 	float DesiredPitch = UKismetMathLibrary::RInterpTo_Constant(
 		RightBarrel->GetRelativeRotation(),
 		FRotator(0.0, 0.0, 0.0),
-		DeltaTime,
+		GetWorld()->GetDeltaSeconds(),
 		PitchSpeed).Pitch;
 
 	RightBarrel->SetRelativeRotation(FRotator(DesiredPitch, 0, 0));
@@ -100,6 +112,7 @@ void AAT_Turret::ResetRotation(float DeltaTime)
 
 FRotator AAT_Turret::ApplyRestrict(FRotator DesiredRotation)
 {	
+	//UE_LOG(LogTemp, Warning, TEXT("ApplyRestrict"));
 	if (DesiredRotation.Yaw >= YawRestrict)
 		DesiredRotation.Yaw = YawRestrict;
 	else if (DesiredRotation.Yaw <= -YawRestrict)
@@ -113,8 +126,32 @@ FRotator AAT_Turret::ApplyRestrict(FRotator DesiredRotation)
 	return DesiredRotation;
 }
 
-void AAT_Turret::TrackTarget(FVector TargetLocation, float DeltaTime)
+void AAT_Turret::UpdateCurrentTarget()
 {
+	if ( PotentialTargets.Num() == 0 )
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UpdateCurrentTarget - nullptr"));
+		CurrentTarget = nullptr;
+		return;
+	}
+	else
+	{
+		float MinLength = FVector::Distance(TurretHorizontTower->GetComponentLocation(), PotentialTargets[0]->GetActorLocation());
+		for (auto it : PotentialTargets)
+		{
+			float NextLength = FVector::Distance(TurretHorizontTower->GetComponentLocation(), it->GetActorLocation());
+			if (NextLength <= MinLength)
+			{
+				MinLength = NextLength;
+				CurrentTarget = it;
+			}
+		}
+	}
+}
+
+void AAT_Turret::TrackTarget(FVector TargetLocation)
+{
+	//UE_LOG(LogTemp, Warning, TEXT("TrackTarget"));
 	// pure magic...
 	// calcualting the diff
 	FVector TransformDiff = TargetLocation - TurretHorizontTower->GetComponentLocation();
@@ -129,7 +166,7 @@ void AAT_Turret::TrackTarget(FVector TargetLocation, float DeltaTime)
 	float DesiredYaw = UKismetMathLibrary::RInterpTo_Constant(
 		TurretHorizontTower->GetRelativeRotation(), 
 		FRotator(0.0, DesiredRotation.Yaw, 0.0), 
-		DeltaTime, 
+		GetWorld()->GetDeltaSeconds(),
 		YawSpeed).Yaw;
 	// apply Yaw
 	TurretHorizontTower->SetRelativeRotation(FRotator( 0.0, DesiredYaw, 0.0));
@@ -137,7 +174,7 @@ void AAT_Turret::TrackTarget(FVector TargetLocation, float DeltaTime)
 	float DesiredPitch = UKismetMathLibrary::RInterpTo_Constant(
 		RightBarrel->GetRelativeRotation(), 
 		FRotator(DesiredRotation.Pitch, 0.0, 0.0),
-		DeltaTime,
+		GetWorld()->GetDeltaSeconds(),
 		PitchSpeed).Pitch;
 	// apply Pitch
 	RightBarrel->SetRelativeRotation(FRotator( DesiredPitch, 0.0, 0.0));

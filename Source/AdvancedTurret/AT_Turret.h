@@ -35,8 +35,6 @@ public:
 	UPROPERTY(EditAnywhere)
 		UCapsuleComponent* DetectionSphere;
 
-	AAT_TargetPractice* CurrentTarget;
-
 	//UPROPERTY(EditAnywhere)
 	//	TSubsclassOf<AT_Projectile>* AT_Projectile;
 
@@ -45,15 +43,26 @@ public:
 	UFUNCTION()
 		void OnEndOverlap(AActor* TurretActor, AActor* OtherActor);
 
-	void TrackTarget(FVector TargetLocation, float DeltaTime);
-	void ResetRotation(float DeltaTime);
-	FRotator ApplyRestrict(FRotator DesiredRotation);
-	// rotation restrict
-	float PitchRestrict;
-	float YawRestrict;
+	AAT_TargetPractice * CurrentTarget;
 
-	float PitchSpeed;
-	float YawSpeed;
+	TArray<AAT_TargetPractice *> PotentialTargets;
+
+
+	void UpdateCurrentTarget();
+	void TrackTarget(FVector TargetLocation);
+	void ResetRotation();
+	FRotator ApplyRestrict(FRotator DesiredRotation);
+
+	// rotation restrict values
+	UPROPERTY(EditAnywhere)
+		float PitchRestrict;
+	UPROPERTY(EditAnywhere)
+		float YawRestrict;
+	// rotation speed values
+	UPROPERTY(EditAnywhere)
+		float PitchSpeed;
+	UPROPERTY(EditAnywhere)
+		float YawSpeed;
 
 protected:
 	// Called when the game starts or when spawned
