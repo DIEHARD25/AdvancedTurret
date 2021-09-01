@@ -46,11 +46,19 @@ public:
 	AAT_TargetPractice * CurrentTarget;
 
 	TArray<AAT_TargetPractice *> PotentialTargets;
-
-
+	
 	void UpdateCurrentTarget();
 	void TrackTarget(FVector TargetLocation);
 	void ResetRotation();
+
+	void BeginTrack();
+	void ContinueTrack();
+	void CancelTrack();
+
+	void BeginReset();
+	void ContinueReset();
+	void CancelReset();
+
 	FRotator ApplyRestrict(FRotator DesiredRotation);
 
 	// rotation restrict values
@@ -63,6 +71,8 @@ public:
 		float PitchSpeed;
 	UPROPERTY(EditAnywhere)
 		float YawSpeed;
+
+	FTimerHandle TimerHandle;
 
 protected:
 	// Called when the game starts or when spawned

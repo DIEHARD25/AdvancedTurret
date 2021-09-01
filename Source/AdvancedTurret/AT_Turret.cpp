@@ -34,8 +34,8 @@ AAT_Turret::AAT_Turret()
 	PitchRestrict = 60.0f;
 	YawRestrict = 360.0f;
 
-	PitchSpeed = 50.0f;
-	YawSpeed = 50.0f;
+	PitchSpeed = 150.0f;
+	YawSpeed = 150.0f;
 	PotentialTargets.Empty();
 }
 
@@ -52,10 +52,13 @@ void AAT_Turret::BeginPlay()
 void AAT_Turret::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	// commented out since we have nice tickless tracking code with timers
+	/*
 	if(CurrentTarget)
 		TrackTarget(CurrentTarget->GetActorLocation());
 	else
 		ResetRotation();
+	*/
 }
 
 // Called to bind functionality to input
@@ -66,27 +69,33 @@ void AAT_Turret::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 
 void AAT_Turret::OnBeginOverlap(AActor* TurretActor, AActor* OtherActor)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OverlapBegin"));
+	//UE_LOG(LogTemp, Warning, TEXT("OverlapBegin"));
 	// first check if this is ok target and add it to array
 	AAT_TargetPractice * Target = Cast<AAT_TargetPractice>(OtherActor);
+
 	if (Target)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("OverlapBegin - adding"));
+		//UE_LOG(LogTemp, Warning, TEXT("OverlapBegin - adding"));
 		PotentialTargets.Add(Target);
 		UpdateCurrentTarget();
 	}
+	if (CurrentTarget)
+		BeginTrack();
 }
 
 void AAT_Turret::OnEndOverlap(AActor* TurretActor, AActor* OtherActor)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OverlapEnd"));
+	//UE_LOG(LogTemp, Warning, TEXT("OverlapEnd"));
 	AAT_TargetPractice * Target = Cast<AAT_TargetPractice>(OtherActor);
+
 	if (Target)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("OverlapEnd - removing"));
+		//UE_LOG(LogTemp, Warning, TEXT("OverlapEnd - removing"));
 		PotentialTargets.Remove(Target);
 		UpdateCurrentTarget();
 	}
+	if (!CurrentTarget)
+		BeginReset();
 }
 
 void AAT_Turret::ResetRotation()
@@ -109,6 +118,60 @@ void AAT_Turret::ResetRotation()
 
 	LeftBarrel->SetRelativeRotation(FRotator(DesiredPitch, 0, 0));
 }
+
+void AAT_Turret::BeginTrack()
+{
+	//UE_LOG(LogTemp, Warning, TEXT("BeginTrack()"));
+	if (CurrentTarget)
+		ContinueTrack();	
+	else
+		CancelTrack();
+}
+
+void AAT_Turret::ContinueTrack()
+{
+	//UE_LOG(LogTemp, Warning, TEXT("ContinueTrack()"));
+	if (CurrentTarget)
+	{
+		UpdateCurrentTarget();
+		TrackTarget(CurrentTarget->GetActorLocation());		
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AAT_Turret::ContinueTrack, GetWorld()->GetDeltaSeconds(), true, 0.005f);
+	}
+	else	
+		CancelTrack();	
+}
+
+void AAT_Turret::CancelTrack()
+{
+	//UE_LOG(LogTemp, Warning, TEXT("CancelTrack()"));
+	GetWorldTimerManager().ClearTimer(TimerHandle);
+	BeginReset();
+}
+
+void AAT_Turret::BeginReset()
+{
+	//UE_LOG(LogTemp, Warning, TEXT("BeginReset()"));
+	ContinueReset();
+}
+
+void AAT_Turret::ContinueReset()
+{
+	//UE_LOG(LogTemp, Warning, TEXT("ContinueReset()"));
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AAT_Turret::ContinueReset, GetWorld()->GetDeltaSeconds(), true, 0.005f);
+	ResetRotation();
+
+	if (FMath::IsNearlyEqual(TurretHorizontTower->GetRelativeRotation().Yaw, 0.0f, 0.0001f) 
+		&& 
+		FMath::IsNearlyEqual(RightBarrel->GetRelativeRotation().Pitch, 0.0f, 0.0001f))
+		CancelReset();
+}
+
+void AAT_Turret::CancelReset()
+{
+	//UE_LOG(LogTemp, Warning, TEXT("CancelReset()"));	
+	GetWorldTimerManager().ClearTimer(TimerHandle);
+}
+
 
 FRotator AAT_Turret::ApplyRestrict(FRotator DesiredRotation)
 {	
@@ -146,12 +209,12 @@ void AAT_Turret::UpdateCurrentTarget()
 				CurrentTarget = it;
 			}
 		}
-	}
+	}	
 }
 
 void AAT_Turret::TrackTarget(FVector TargetLocation)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("TrackTarget"));
+	UE_LOG(LogTemp, Warning, TEXT("TrackTarget"));
 	// pure magic...
 	// calcualting the diff
 	FVector TransformDiff = TargetLocation - TurretHorizontTower->GetComponentLocation();
