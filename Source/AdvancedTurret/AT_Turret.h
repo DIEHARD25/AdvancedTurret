@@ -8,6 +8,7 @@
 
 #include "Kismet/KismetMathLibrary.h"
 #include "AT_TargetPractice.h"
+#include "AT_Projectile.h"
 
 #include "AT_Turret.generated.h"
 
@@ -21,25 +22,26 @@ public:
 	AAT_Turret();
 
 	UPROPERTY(EditAnywhere)
-		UStaticMeshComponent* TurrenBase; // non-moving
+		UStaticMeshComponent * TurrenBase; // non-moving
 
 	UPROPERTY(EditAnywhere)
-		UStaticMeshComponent* TurretHorizontTower; // moving in horizont
+		UStaticMeshComponent * TurretHorizontTower; // moving in horizont
 
 	UPROPERTY(EditAnywhere)
-		UStaticMeshComponent * LeftBarrel;
+		UStaticMeshComponent * LeftBarrel; // moving in vertical
 
 	UPROPERTY(EditAnywhere)
-		UStaticMeshComponent * RightBarrel;
+		UStaticMeshComponent * RightBarrel; // moving in vertical
 
 	UPROPERTY(EditAnywhere)
-		UCapsuleComponent* DetectionSphere;
+		UCapsuleComponent * DetectionSphere; // temporary detection - will move this logic to dedicated class
 
 	//UPROPERTY(EditAnywhere)
-	//	TSubsclassOf<AT_Projectile>* AT_Projectile;
+	//	TSubclassOf<AAT_Projectile> * Projectile;
 
 	UFUNCTION()
 		void OnBeginOverlap(AActor* TurretActor, AActor* OtherActor);
+
 	UFUNCTION()
 		void OnEndOverlap(AActor* TurretActor, AActor* OtherActor);
 

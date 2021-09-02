@@ -4,35 +4,33 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "AT_TargetPractice.generated.h"
+
+#include "AT_Projectile.generated.h"
 
 UCLASS()
-class ADVANCEDTURRET_API AAT_TargetPractice : public AActor
+class ADVANCEDTURRET_API AAT_Projectile : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	AAT_TargetPractice();
-
-	FVector CurrentPosition;
-	FRotator CurrentRotation;
-	FVector CurrentVelocity;
-	FVector CurrentVelocityTick;
-	FVector CurrentDirection;
+	AAT_Projectile();
 
 	UPROPERTY(EditAnywhere)
 		UStaticMeshComponent* ProjectileMesh;
 
 	UPROPERTY(EditAnywhere)
-		UCapsuleComponent* CollisionComp;
+		UCapsuleComponent * CollisionComp;
+
+	UPROPERTY(EditAnywhere)
+		UProjectileMovementComponent * Movement;
+
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	void UpdateMovement(float DeltaTime);
 
 public:	
 	// Called every frame

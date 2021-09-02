@@ -45,20 +45,14 @@ void AAT_Turret::BeginPlay()
 	Super::BeginPlay();
 	// register overriden overlap call
 	OnActorBeginOverlap.AddDynamic(this, &AAT_Turret::OnBeginOverlap);
-	OnActorEndOverlap.AddDynamic(this, &AAT_Turret::OnEndOverlap);
+	OnActorEndOverlap.AddDynamic(this, &AAT_Turret::OnEndOverlap);	
 }
 
 // Called every frame
 void AAT_Turret::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	// commented out since we have nice tickless tracking code with timers
-	/*
-	if(CurrentTarget)
-		TrackTarget(CurrentTarget->GetActorLocation());
-	else
-		ResetRotation();
-	*/
+
 }
 
 // Called to bind functionality to input
@@ -69,14 +63,13 @@ void AAT_Turret::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 
 void AAT_Turret::OnBeginOverlap(AActor* TurretActor, AActor* OtherActor)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("OverlapBegin"));
 	// first check if this is ok target and add it to array
 	AAT_TargetPractice * Target = Cast<AAT_TargetPractice>(OtherActor);
 
 	if (Target)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("OverlapBegin - adding"));
 		PotentialTargets.Add(Target);
+		// update the currentTarget - we want to track closest to turret
 		UpdateCurrentTarget();
 	}
 	if (CurrentTarget)
@@ -85,13 +78,12 @@ void AAT_Turret::OnBeginOverlap(AActor* TurretActor, AActor* OtherActor)
 
 void AAT_Turret::OnEndOverlap(AActor* TurretActor, AActor* OtherActor)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("OverlapEnd"));
 	AAT_TargetPractice * Target = Cast<AAT_TargetPractice>(OtherActor);
 
 	if (Target)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("OverlapEnd - removing"));
 		PotentialTargets.Remove(Target);
+		// update the currentTarget - we want to track closest to turret
 		UpdateCurrentTarget();
 	}
 	if (!CurrentTarget)
@@ -121,7 +113,6 @@ void AAT_Turret::ResetRotation()
 
 void AAT_Turret::BeginTrack()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("BeginTrack()"));
 	if (CurrentTarget)
 		ContinueTrack();	
 	else
@@ -130,11 +121,13 @@ void AAT_Turret::BeginTrack()
 
 void AAT_Turret::ContinueTrack()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("ContinueTrack()"));
 	if (CurrentTarget)
 	{
+		// choose closest one
 		UpdateCurrentTarget();
+		// track it
 		TrackTarget(CurrentTarget->GetActorLocation());		
+		// timer for repeating call
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AAT_Turret::ContinueTrack, GetWorld()->GetDeltaSeconds(), true, 0.005f);
 	}
 	else	
@@ -143,39 +136,34 @@ void AAT_Turret::ContinueTrack()
 
 void AAT_Turret::CancelTrack()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("CancelTrack()"));
 	GetWorldTimerManager().ClearTimer(TimerHandle);
 	BeginReset();
 }
 
 void AAT_Turret::BeginReset()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("BeginReset()"));
 	ContinueReset();
 }
 
 void AAT_Turret::ContinueReset()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("ContinueReset()"));
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AAT_Turret::ContinueReset, GetWorld()->GetDeltaSeconds(), true, 0.005f);
 	ResetRotation();
 
-	if (FMath::IsNearlyEqual(TurretHorizontTower->GetRelativeRotation().Yaw, 0.0f, 0.0001f) 
+	if (FMath::IsNearlyEqual(TurretHorizontTower->GetRelativeRotation().Yaw, 0.0f, 0.01f) 
 		&& 
-		FMath::IsNearlyEqual(RightBarrel->GetRelativeRotation().Pitch, 0.0f, 0.0001f))
+		FMath::IsNearlyEqual(RightBarrel->GetRelativeRotation().Pitch, 0.0f, 0.01f))
 		CancelReset();
 }
 
 void AAT_Turret::CancelReset()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("CancelReset()"));	
 	GetWorldTimerManager().ClearTimer(TimerHandle);
 }
 
 
 FRotator AAT_Turret::ApplyRestrict(FRotator DesiredRotation)
 {	
-	//UE_LOG(LogTemp, Warning, TEXT("ApplyRestrict"));
 	if (DesiredRotation.Yaw >= YawRestrict)
 		DesiredRotation.Yaw = YawRestrict;
 	else if (DesiredRotation.Yaw <= -YawRestrict)
@@ -193,16 +181,15 @@ void AAT_Turret::UpdateCurrentTarget()
 {
 	if ( PotentialTargets.Num() == 0 )
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UpdateCurrentTarget - nullptr"));
 		CurrentTarget = nullptr;
 		return;
 	}
 	else
-	{
-		float MinLength = FVector::Distance(TurretHorizontTower->GetComponentLocation(), PotentialTargets[0]->GetActorLocation());
+	{		
+		float MinLength = (TurretHorizontTower->GetComponentLocation() - PotentialTargets[0]->GetActorLocation()).Size();
 		for (auto it : PotentialTargets)
 		{
-			float NextLength = FVector::Distance(TurretHorizontTower->GetComponentLocation(), it->GetActorLocation());
+			float NextLength = (TurretHorizontTower->GetComponentLocation() - it->GetActorLocation()).Size();
 			if (NextLength <= MinLength)
 			{
 				MinLength = NextLength;
@@ -214,7 +201,6 @@ void AAT_Turret::UpdateCurrentTarget()
 
 void AAT_Turret::TrackTarget(FVector TargetLocation)
 {
-	UE_LOG(LogTemp, Warning, TEXT("TrackTarget"));
 	// pure magic...
 	// calcualting the diff
 	FVector TransformDiff = TargetLocation - TurretHorizontTower->GetComponentLocation();
