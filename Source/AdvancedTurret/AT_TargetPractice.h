@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
+
 #include "AT_TargetPractice.generated.h"
 
 UCLASS()
@@ -24,15 +26,20 @@ public:
 
 	UPROPERTY(EditAnywhere)
 		UStaticMeshComponent* ProjectileMesh;
-
 	UPROPERTY(EditAnywhere)
 		UCapsuleComponent* CollisionComp;
+	UFUNCTION()
+		void OnBeginOverlap(AActor* TargetActor, AActor* OtherActor);
+
+	float Health;
+	bool bOnce;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	void UpdateMovement(float DeltaTime);
+	void ReceiveAnyDamage(float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
 public:	
 	// Called every frame

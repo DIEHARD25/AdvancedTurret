@@ -7,6 +7,8 @@
 #include "Components/CapsuleComponent.h"
 
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
+
 #include "AT_TargetPractice.h"
 #include "AT_Projectile.h"
 
@@ -36,8 +38,8 @@ public:
 	UPROPERTY(EditAnywhere)
 		UCapsuleComponent * DetectionSphere; // temporary detection - will move this logic to dedicated class
 
-	//UPROPERTY(EditAnywhere)
-	//	TSubclassOf<AAT_Projectile> * Projectile;
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<AAT_Projectile> Projectile_BP;
 
 	UFUNCTION()
 		void OnBeginOverlap(AActor* TurretActor, AActor* OtherActor);
@@ -50,7 +52,7 @@ public:
 	TArray<AAT_TargetPractice *> PotentialTargets;
 	
 	void UpdateCurrentTarget();
-	void TrackTarget(FVector TargetLocation);
+	FRotator TrackTarget(FVector TargetLocation);
 	void ResetRotation();
 
 	void BeginTrack();
@@ -60,6 +62,12 @@ public:
 	void BeginReset();
 	void ContinueReset();
 	void CancelReset();
+
+	void BeginFiring();
+	void ContinueFiring();
+	void CancelFiring();
+
+	void FireProjectile();
 
 	FRotator ApplyRestrict(FRotator DesiredRotation);
 
@@ -73,8 +81,15 @@ public:
 		float PitchSpeed;
 	UPROPERTY(EditAnywhere)
 		float YawSpeed;
+	UPROPERTY(EditAnywhere)
+		float FireRate;
 
-	FTimerHandle TimerHandle;
+	bool bOnce;
+
+	FTimerHandle RotationTimerHandle;
+	FTimerHandle FireTimerHandle;
+
+	FActorSpawnParameters Params;
 
 protected:
 	// Called when the game starts or when spawned

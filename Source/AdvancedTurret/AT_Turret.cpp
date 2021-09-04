@@ -36,6 +36,14 @@ AAT_Turret::AAT_Turret()
 
 	PitchSpeed = 150.0f;
 	YawSpeed = 150.0f;
+
+	FireRate = 1.0f;
+
+	Params = {};
+	Params.Owner = this;
+
+	bOnce = true;
+
 	PotentialTargets.Empty();
 }
 
@@ -113,6 +121,8 @@ void AAT_Turret::ResetRotation()
 
 void AAT_Turret::BeginTrack()
 {
+	GetWorld()->GetTimerManager().SetTimer(RotationTimerHandle, this, &AAT_Turret::ContinueTrack, GetWorld()->GetDeltaSeconds(), true, 0.0f);
+	// double-check we have the target
 	if (CurrentTarget)
 		ContinueTrack();	
 	else
@@ -126,9 +136,14 @@ void AAT_Turret::ContinueTrack()
 		// choose closest one
 		UpdateCurrentTarget();
 		// track it
-		TrackTarget(CurrentTarget->GetActorLocation());		
+		FRotator CurrentRotation = TrackTarget(CurrentTarget->GetActorLocation());		
 		// timer for repeating call
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AAT_Turret::ContinueTrack, GetWorld()->GetDeltaSeconds(), true, 0.005f);
+		if (FMath::IsNearlyEqual(TurretHorizontTower->GetRelativeRotation().Yaw, CurrentRotation.Yaw, 0.01f)
+			&&
+			FMath::IsNearlyEqual(RightBarrel->GetRelativeRotation().Pitch, CurrentRotation.Pitch, 0.01f)
+			&& 
+			bOnce)
+			BeginFiring();
 	}
 	else	
 		CancelTrack();	
@@ -136,20 +151,19 @@ void AAT_Turret::ContinueTrack()
 
 void AAT_Turret::CancelTrack()
 {
-	GetWorldTimerManager().ClearTimer(TimerHandle);
+	GetWorldTimerManager().ClearTimer(RotationTimerHandle);
 	BeginReset();
 }
 
 void AAT_Turret::BeginReset()
 {
+	GetWorld()->GetTimerManager().SetTimer(RotationTimerHandle, this, &AAT_Turret::ContinueReset, GetWorld()->GetDeltaSeconds(), true, 0.0f);
 	ContinueReset();
 }
 
 void AAT_Turret::ContinueReset()
-{
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AAT_Turret::ContinueReset, GetWorld()->GetDeltaSeconds(), true, 0.005f);
+{	
 	ResetRotation();
-
 	if (FMath::IsNearlyEqual(TurretHorizontTower->GetRelativeRotation().Yaw, 0.0f, 0.01f) 
 		&& 
 		FMath::IsNearlyEqual(RightBarrel->GetRelativeRotation().Pitch, 0.0f, 0.01f))
@@ -158,7 +172,43 @@ void AAT_Turret::ContinueReset()
 
 void AAT_Turret::CancelReset()
 {
-	GetWorldTimerManager().ClearTimer(TimerHandle);
+	GetWorldTimerManager().ClearTimer(RotationTimerHandle);
+}
+
+void AAT_Turret::BeginFiring()
+{	
+	bOnce = false;
+	GetWorld()->GetTimerManager().SetTimer(FireTimerHandle, this, &AAT_Turret::ContinueFiring, FireRate, true, FireRate);
+	ContinueFiring();
+}
+
+void AAT_Turret::ContinueFiring()
+{
+	if (CurrentTarget)
+		FireProjectile();
+	else
+		CancelFiring();
+}
+
+void AAT_Turret::CancelFiring()
+{
+	GetWorldTimerManager().ClearTimer(FireTimerHandle);
+	bOnce = true;
+	BeginTrack();
+}
+
+void AAT_Turret::FireProjectile()
+{
+	// spawn the projectile
+	if (Projectile_BP)
+	{
+		FVector SpawnLocation = LeftBarrel->GetComponentLocation();
+		FRotator SpawnRotation = LeftBarrel->GetComponentRotation();
+		GetWorld()->SpawnActor(Projectile_BP, &SpawnLocation, &SpawnRotation, Params);
+		SpawnLocation = RightBarrel->GetComponentLocation();
+		SpawnRotation = RightBarrel->GetComponentRotation();
+		GetWorld()->SpawnActor(Projectile_BP, &SpawnLocation, &SpawnRotation, Params);
+	}
 }
 
 
@@ -199,7 +249,7 @@ void AAT_Turret::UpdateCurrentTarget()
 	}	
 }
 
-void AAT_Turret::TrackTarget(FVector TargetLocation)
+FRotator AAT_Turret::TrackTarget(FVector TargetLocation)
 {
 	// pure magic...
 	// calcualting the diff
@@ -228,4 +278,5 @@ void AAT_Turret::TrackTarget(FVector TargetLocation)
 	// apply Pitch
 	RightBarrel->SetRelativeRotation(FRotator( DesiredPitch, 0.0, 0.0));
 	LeftBarrel->SetRelativeRotation(FRotator( DesiredPitch, 0.0, 0.0));
+	return DesiredRotation;
 }

@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 #include "AT_Projectile.generated.h"
 
@@ -18,15 +19,20 @@ public:
 	// Sets default values for this actor's properties
 	AAT_Projectile();
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere)	
 		UStaticMeshComponent* ProjectileMesh;
-
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere)	
 		UCapsuleComponent * CollisionComp;
-
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere)	
 		UProjectileMovementComponent * Movement;
 
+	FVector StartLocation;
+	float ProjectileRange;
+	float Damage;
+	bool bOnce;
+
+	UFUNCTION()	
+		void OnBeginOverlap(AActor* ProjectileActor, AActor* OtherActor);
 
 protected:
 	// Called when the game starts or when spawned
