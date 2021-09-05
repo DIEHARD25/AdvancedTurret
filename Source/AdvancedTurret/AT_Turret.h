@@ -23,36 +23,54 @@ public:
 	// Sets default values for this pawn's properties
 	AAT_Turret();
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere)	
 		UStaticMeshComponent * TurrenBase; // non-moving
-
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere)	
 		UStaticMeshComponent * TurretHorizontTower; // moving in horizont
-
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere)	
 		UStaticMeshComponent * LeftBarrel; // moving in vertical
-
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere)	
 		UStaticMeshComponent * RightBarrel; // moving in vertical
-
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere)	
 		UCapsuleComponent * DetectionSphere; // temporary detection - will move this logic to dedicated class
-
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere)	
 		TSubclassOf<AAT_Projectile> Projectile_BP;
 
-	UFUNCTION()
+	UFUNCTION() 
 		void OnBeginOverlap(AActor* TurretActor, AActor* OtherActor);
-
-	UFUNCTION()
+	UFUNCTION()	
 		void OnEndOverlap(AActor* TurretActor, AActor* OtherActor);
-
-	AAT_TargetPractice * CurrentTarget;
 
 	TArray<AAT_TargetPractice *> PotentialTargets;
 	
+	// rotation restrict values
+	UPROPERTY(EditAnywhere)	
+		float PitchRestrictUp;
+	UPROPERTY(EditAnywhere)	
+		float PitchRestrictDown;
+	UPROPERTY(EditAnywhere)	
+		float YawRestrictLeft;
+	UPROPERTY(EditAnywhere)	
+		float YawRestrictRight;
+	// rotation speed values
+	UPROPERTY(EditAnywhere)	
+		float PitchSpeed;
+	UPROPERTY(EditAnywhere)	
+		float YawSpeed;
+	UPROPERTY(EditAnywhere)	
+		float FireRate;
+	UPROPERTY(EditAnywhere)
+		float TrackTolerance;
+	UPROPERTY(EditAnywhere)
+		float ProjectileSpread;
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
 	void UpdateCurrentTarget();
 	FRotator TrackTarget(FVector TargetLocation);
+	FVector PredictTargetPosition(FVector TargetLocation);
 	void ResetRotation();
 
 	void BeginTrack();
@@ -70,20 +88,7 @@ public:
 	void FireProjectile();
 
 	FRotator ApplyRestrict(FRotator DesiredRotation);
-
-	// rotation restrict values
-	UPROPERTY(EditAnywhere)
-		float PitchRestrict;
-	UPROPERTY(EditAnywhere)
-		float YawRestrict;
-	// rotation speed values
-	UPROPERTY(EditAnywhere)
-		float PitchSpeed;
-	UPROPERTY(EditAnywhere)
-		float YawSpeed;
-	UPROPERTY(EditAnywhere)
-		float FireRate;
-
+	
 	bool bOnce;
 
 	FTimerHandle RotationTimerHandle;
@@ -91,9 +96,7 @@ public:
 
 	FActorSpawnParameters Params;
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	AAT_TargetPractice * CurrentTarget;
 
 public:	
 	// Called every frame

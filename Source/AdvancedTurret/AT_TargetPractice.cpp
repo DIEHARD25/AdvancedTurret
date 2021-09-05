@@ -37,7 +37,7 @@ void AAT_TargetPractice::BeginPlay()
 
 	CurrentPosition = GetActorLocation();
 	CurrentRotation = GetActorRotation();
-	CurrentVelocity = FVector(FMath::RandRange(-350.0f, -150.0f), 0.0f, 0.0f);
+	CurrentVelocity = FVector(FMath::RandRange(-700.0f, -900.0f), 0.0f, 0.0f);
 	// pff.. simple
 	CurrentDirection = CurrentPosition + CurrentVelocity;
 	OnActorBeginOverlap.AddDynamic(this, &AAT_TargetPractice::OnBeginOverlap);		
@@ -56,7 +56,7 @@ void AAT_TargetPractice::UpdateMovement(float DeltaTime)
 
 	CurrentVelocityTick.X = CurrentVelocity.X * DeltaTime;
 	CurrentVelocityTick.Y = CurrentVelocity.Y * DeltaTime;
-	CurrentVelocityTick.Z = 0.0f;
+	CurrentVelocityTick.Z = CurrentVelocity.Z * DeltaTime;
 
 	CurrentDirection += CurrentVelocityTick;
 	SetActorLocation(CurrentDirection);

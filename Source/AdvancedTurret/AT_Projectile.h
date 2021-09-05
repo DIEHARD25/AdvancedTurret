@@ -26,9 +26,14 @@ public:
 	UPROPERTY(EditAnywhere)	
 		UProjectileMovementComponent * Movement;
 
-	FVector StartLocation;
-	float ProjectileRange;
-	float Damage;
+	UPROPERTY(EditAnywhere)
+		float ProjectileSpeed;
+	UPROPERTY(EditAnywhere)
+		float ProjectileRange;
+	UPROPERTY(EditAnywhere)
+		float Damage;
+
+	FVector StartLocation;		
 	bool bOnce;
 
 	UFUNCTION()	

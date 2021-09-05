@@ -23,16 +23,17 @@ AAT_Projectile::AAT_Projectile()
 	ProjectileMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	ProjectileMesh->SetGenerateOverlapEvents(true);
 	
+	ProjectileSpeed = 2500.0f;
+	ProjectileRange = 3000.0f;
+	Damage = 1.0f;
+
 	Movement->Activate();
-	Movement->InitialSpeed = 2000.0f;
-	Movement->MaxSpeed = 2500.0f;
+	Movement->InitialSpeed = ProjectileSpeed;
+	Movement->MaxSpeed = ProjectileSpeed;
 
 	Movement->bRotationFollowsVelocity = true;
 
-	Movement->ProjectileGravityScale = 0.0f;
-
-	ProjectileRange = 3000.0f;
-	Damage = 1.0f;
+	Movement->ProjectileGravityScale = 0.0f;	
 	bOnce = true;
 }
 

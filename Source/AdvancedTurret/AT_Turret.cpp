@@ -31,13 +31,17 @@ AAT_Turret::AAT_Turret()
 	LeftBarrel->AttachToComponent(TurretHorizontTower, FAttachmentTransformRules::KeepRelativeTransform);
 
 	CurrentTarget = nullptr;
-	PitchRestrict = 60.0f;
-	YawRestrict = 360.0f;
+	PitchRestrictUp = 60.0f;
+	PitchRestrictDown = 10.0f;
+	YawRestrictRight = 120.0f;
+	YawRestrictLeft = 120.0f;
 
 	PitchSpeed = 150.0f;
 	YawSpeed = 150.0f;
 
-	FireRate = 1.0f;
+	FireRate = 60.0f; // shots per minute
+	TrackTolerance = 0.01f;
+	ProjectileSpread = 0.5f;
 
 	Params = {};
 	Params.Owner = this;
@@ -54,6 +58,9 @@ void AAT_Turret::BeginPlay()
 	// register overriden overlap call
 	OnActorBeginOverlap.AddDynamic(this, &AAT_Turret::OnBeginOverlap);
 	OnActorEndOverlap.AddDynamic(this, &AAT_Turret::OnEndOverlap);	
+	// extra check for zro FireRate
+	if (FireRate == 0.0f)
+		FireRate = 0.0001f;
 }
 
 // Called every frame
@@ -133,17 +140,28 @@ void AAT_Turret::ContinueTrack()
 {
 	if (CurrentTarget)
 	{
-		// choose closest one
 		UpdateCurrentTarget();
-		// track it
-		FRotator CurrentRotation = TrackTarget(CurrentTarget->GetActorLocation());		
-		// timer for repeating call
-		if (FMath::IsNearlyEqual(TurretHorizontTower->GetRelativeRotation().Yaw, CurrentRotation.Yaw, 0.01f)
+		FVector PredictedOffset = PredictTargetPosition(CurrentTarget->GetActorLocation());
+		// pure magic...
+		FRotator CurrentRotation = TrackTarget(CurrentTarget->GetActorLocation() + PredictedOffset);
+
+		if (FMath::IsNearlyEqual(TurretHorizontTower->GetRelativeRotation().Yaw, CurrentRotation.Yaw, TrackTolerance)
 			&&
-			FMath::IsNearlyEqual(RightBarrel->GetRelativeRotation().Pitch, CurrentRotation.Pitch, 0.01f)
-			&& 
-			bOnce)
+			FMath::IsNearlyEqual(RightBarrel->GetRelativeRotation().Pitch, CurrentRotation.Pitch, TrackTolerance)
+			&&
+			bOnce
+			&&
+			( // track restrict check
+			!FMath::IsNearlyEqual(TurretHorizontTower->GetRelativeRotation().Yaw, YawRestrictRight, TrackTolerance)
+			||
+			!FMath::IsNearlyEqual(TurretHorizontTower->GetRelativeRotation().Yaw, -YawRestrictLeft, TrackTolerance)
+			||
+			!FMath::IsNearlyEqual(RightBarrel->GetRelativeRotation().Pitch, PitchRestrictUp, TrackTolerance)
+			||
+			!FMath::IsNearlyEqual(RightBarrel->GetRelativeRotation().Pitch, -PitchRestrictDown, TrackTolerance))
+			)
 			BeginFiring();
+			
 	}
 	else	
 		CancelTrack();	
@@ -164,9 +182,9 @@ void AAT_Turret::BeginReset()
 void AAT_Turret::ContinueReset()
 {	
 	ResetRotation();
-	if (FMath::IsNearlyEqual(TurretHorizontTower->GetRelativeRotation().Yaw, 0.0f, 0.01f) 
+	if (FMath::IsNearlyEqual(TurretHorizontTower->GetRelativeRotation().Yaw, 0.0f, TrackTolerance)
 		&& 
-		FMath::IsNearlyEqual(RightBarrel->GetRelativeRotation().Pitch, 0.0f, 0.01f))
+		FMath::IsNearlyEqual(RightBarrel->GetRelativeRotation().Pitch, 0.0f, TrackTolerance))
 		CancelReset();
 }
 
@@ -178,7 +196,7 @@ void AAT_Turret::CancelReset()
 void AAT_Turret::BeginFiring()
 {	
 	bOnce = false;
-	GetWorld()->GetTimerManager().SetTimer(FireTimerHandle, this, &AAT_Turret::ContinueFiring, FireRate, true, FireRate);
+	GetWorld()->GetTimerManager().SetTimer(FireTimerHandle, this, &AAT_Turret::ContinueFiring, 60.0 / FireRate, true, 60.0 / FireRate);
 	ContinueFiring();
 }
 
@@ -194,6 +212,7 @@ void AAT_Turret::CancelFiring()
 {
 	GetWorldTimerManager().ClearTimer(FireTimerHandle);
 	bOnce = true;
+	// target destriyed or left the range - let's check is there any other targets
 	BeginTrack();
 }
 
@@ -201,28 +220,41 @@ void AAT_Turret::FireProjectile()
 {
 	// spawn the projectile
 	if (Projectile_BP)
-	{
+	{		
 		FVector SpawnLocation = LeftBarrel->GetComponentLocation();
-		FRotator SpawnRotation = LeftBarrel->GetComponentRotation();
-		GetWorld()->SpawnActor(Projectile_BP, &SpawnLocation, &SpawnRotation, Params);
+		FRotator SpawnRotation = LeftBarrel->GetComponentRotation();		
+		AAT_Projectile * LeftProjectile = Cast<AAT_Projectile>(GetWorld()->SpawnActor(Projectile_BP, &SpawnLocation, &SpawnRotation, Params));
+		if (LeftProjectile)
+		{			
+			// don;t touching X since it's the initial look of the projectile
+			LeftProjectile->Movement->Velocity.Y += FMath::RandRange(-ProjectileSpread * 100, ProjectileSpread * 100);
+			LeftProjectile->Movement->Velocity.Z += FMath::RandRange(-ProjectileSpread * 100, ProjectileSpread * 100);
+		}
 		SpawnLocation = RightBarrel->GetComponentLocation();
 		SpawnRotation = RightBarrel->GetComponentRotation();
-		GetWorld()->SpawnActor(Projectile_BP, &SpawnLocation, &SpawnRotation, Params);
+
+		AAT_Projectile * RightProjectile = Cast<AAT_Projectile>(GetWorld()->SpawnActor(Projectile_BP, &SpawnLocation, &SpawnRotation, Params));
+		if (RightProjectile)
+		{
+			// don;t touching X since it's the initial look of the projectile
+			RightProjectile->Movement->Velocity.Y += FMath::RandRange(-ProjectileSpread * 100, ProjectileSpread * 100);
+			RightProjectile->Movement->Velocity.Z += FMath::RandRange(-ProjectileSpread * 100, ProjectileSpread * 100);
+		}
 	}
 }
 
 
 FRotator AAT_Turret::ApplyRestrict(FRotator DesiredRotation)
 {	
-	if (DesiredRotation.Yaw >= YawRestrict)
-		DesiredRotation.Yaw = YawRestrict;
-	else if (DesiredRotation.Yaw <= -YawRestrict)
-		DesiredRotation.Yaw = -YawRestrict;
+	if (DesiredRotation.Yaw >= YawRestrictRight)
+		DesiredRotation.Yaw = YawRestrictRight;
+	else if (DesiredRotation.Yaw <= -YawRestrictLeft)
+		DesiredRotation.Yaw = -YawRestrictLeft;
 
-	if (DesiredRotation.Pitch >= PitchRestrict)
-		DesiredRotation.Pitch = PitchRestrict;
-	else if (DesiredRotation.Pitch <= -PitchRestrict)
-		DesiredRotation.Pitch = -PitchRestrict;
+	if (DesiredRotation.Pitch >= PitchRestrictUp)
+		DesiredRotation.Pitch = PitchRestrictUp;
+	else if (DesiredRotation.Pitch <= -PitchRestrictDown)
+		DesiredRotation.Pitch = -PitchRestrictDown;
 
 	return DesiredRotation;
 }
@@ -235,7 +267,8 @@ void AAT_Turret::UpdateCurrentTarget()
 		return;
 	}
 	else
-	{		
+	{
+		AAT_TargetPractice * OldCurrentTarget = CurrentTarget;
 		float MinLength = (TurretHorizontTower->GetComponentLocation() - PotentialTargets[0]->GetActorLocation()).Size();
 		for (auto it : PotentialTargets)
 		{
@@ -246,6 +279,8 @@ void AAT_Turret::UpdateCurrentTarget()
 				CurrentTarget = it;
 			}
 		}
+		if (OldCurrentTarget != CurrentTarget && !bOnce) // we have new one, so stop fire during possible track
+			CancelFiring();
 	}	
 }
 
@@ -279,4 +314,24 @@ FRotator AAT_Turret::TrackTarget(FVector TargetLocation)
 	RightBarrel->SetRelativeRotation(FRotator( DesiredPitch, 0.0, 0.0));
 	LeftBarrel->SetRelativeRotation(FRotator( DesiredPitch, 0.0, 0.0));
 	return DesiredRotation;
+}
+
+FVector AAT_Turret::PredictTargetPosition(FVector TargetLocation)
+{
+	if (!Projectile_BP)
+		return FVector();
+
+	AAT_Projectile * CurrentProjectile = Cast<AAT_Projectile>(Projectile_BP);
+	if (!CurrentProjectile)
+		return FVector();
+
+	if (!CurrentTarget)
+		return FVector();
+
+	// get actual distance to target
+	float Distance = ((TargetLocation - LeftBarrel->GetComponentLocation()).Size() + (TargetLocation - RightBarrel->GetComponentLocation()).Size()) / 2;
+	// now let's calc the time projectile travel those dist
+	float TravelTime = Distance / CurrentProjectile->ProjectileSpeed;
+	// we have prediction time, now let's calc the speed vector during those time
+	return CurrentTarget->CurrentVelocityTick * TravelTime;
 }
