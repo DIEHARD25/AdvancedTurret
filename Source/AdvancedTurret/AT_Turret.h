@@ -26,11 +26,12 @@ public:
 	UPROPERTY(EditAnywhere)	
 		UStaticMeshComponent * TurrenBase; // non-moving
 	UPROPERTY(EditAnywhere)	
-		UStaticMeshComponent * TurretHorizontTower; // moving in horizont
-	UPROPERTY(EditAnywhere)	
+		UStaticMeshComponent * TurretHorizontTower; // moving in horizont		
+	UPROPERTY(EditAnywhere)
 		UStaticMeshComponent * LeftBarrel; // moving in vertical
 	UPROPERTY(EditAnywhere)	
 		UStaticMeshComponent * RightBarrel; // moving in vertical
+
 	UPROPERTY(EditAnywhere)	
 		UCapsuleComponent * DetectionSphere; // temporary detection - will move this logic to dedicated class
 	UPROPERTY(EditAnywhere)	
@@ -57,12 +58,15 @@ public:
 		float PitchSpeed;
 	UPROPERTY(EditAnywhere)	
 		float YawSpeed;
+
 	UPROPERTY(EditAnywhere)	
 		float FireRate;
 	UPROPERTY(EditAnywhere)
 		float TrackTolerance;
 	UPROPERTY(EditAnywhere)
 		float ProjectileSpread;
+	UPROPERTY(EditAnywhere)
+		float ProjectileSpeed;
 
 protected:
 	// Called when the game starts or when spawned

@@ -22,10 +22,9 @@ public:
 	FRotator CurrentRotation;
 	FVector CurrentVelocity;
 	FVector CurrentVelocityTick;
-	FVector CurrentDirection;
 
 	UPROPERTY(EditAnywhere)
-		UStaticMeshComponent* ProjectileMesh;
+		UStaticMeshComponent* TargetMesh;
 	UPROPERTY(EditAnywhere)
 		UCapsuleComponent* CollisionComp;
 	UFUNCTION()

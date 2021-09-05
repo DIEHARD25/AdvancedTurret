@@ -11,10 +11,10 @@ AAT_TargetPractice::AAT_TargetPractice()
 	PrimaryActorTick.bCanEverTick = true;
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
-	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
+	TargetMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TargetMesh"));
 	CollisionComp = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CollisionComponent"));
 
-	ProjectileMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	TargetMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	CollisionComp->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
 	Health = 5.0f;
@@ -37,9 +37,8 @@ void AAT_TargetPractice::BeginPlay()
 
 	CurrentPosition = GetActorLocation();
 	CurrentRotation = GetActorRotation();
-	CurrentVelocity = FVector(FMath::RandRange(-700.0f, -900.0f), 0.0f, 0.0f);
-	// pff.. simple
-	CurrentDirection = CurrentPosition + CurrentVelocity;
+	CurrentVelocity = FVector(FMath::RandRange(-100.0f, -400.0f), 0.0f, 0.0f);
+
 	OnActorBeginOverlap.AddDynamic(this, &AAT_TargetPractice::OnBeginOverlap);		
 }
 
@@ -58,8 +57,8 @@ void AAT_TargetPractice::UpdateMovement(float DeltaTime)
 	CurrentVelocityTick.Y = CurrentVelocity.Y * DeltaTime;
 	CurrentVelocityTick.Z = CurrentVelocity.Z * DeltaTime;
 
-	CurrentDirection += CurrentVelocityTick;
-	SetActorLocation(CurrentDirection);
+	CurrentPosition += CurrentVelocityTick;
+	SetActorLocation(CurrentPosition);
 }
 
 void AAT_TargetPractice::ReceiveAnyDamage(float Damage, const UDamageType * DamageType, AController * InstigatedBy, AActor * DamageCauser)
